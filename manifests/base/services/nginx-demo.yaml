@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: nginx-demo
+  name: nginx-demo
+  namespace: default
+spec:
+  clusterIP: 10.102.146.237
+  clusterIPs:
+  - 10.102.146.237
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - nodePort: 32521
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-demo
+  sessionAffinity: None
+  type: NodePort

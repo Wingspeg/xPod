@@ -1,0 +1,59 @@
+# ============ k8s-workspace .gitignore ============
+
+# === 大文件 / 镜像 ===
+# KubeVirt VM 磁盘镜像(~180GB)
+images/
+# 集群备份
+backups/
+*.raw
+*.img
+*.iso
+*.qcow2
+*.vmdk
+
+# === 证书与密钥 ===
+certs/*.crt
+certs/*.key
+certs/*.pem
+certs/*.p12
+**/secrets/*.yaml
+!**/secrets/.gitkeep
+
+# === 集群本地状态 ===
+clusters/dev/kubeconfig
+clusters/prod/kubeconfig
+clusters/*/admin.conf
+clusters/*/etcd-snapshot-*.db
+
+# === 离线安装包(体积大,从官方下载) ===
+scripts/vm/debs/*.deb
+
+# === k8s-device-plugin vendored ===
+k8s-device-plugin/vendor/
+k8s-device-plugin/tests/vendor/
+
+# === Python 缓存 ===
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+
+# === IDE / 系统 ===
+.vscode/
+.idea/
+.qoder/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === 日志 ===
+*.log
+*.stdout
+*.pid
+nohup.out
+core.*
+
+# === docs 不入库 ===
+docs/

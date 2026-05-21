@@ -1,0 +1,53 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: cpu-node-2
+spec:
+  runStrategy: Always
+  template:
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        memory:
+          guest: 8Gi
+        devices:
+          autoattachGraphicsDevice: false
+          logSerialConsole: true
+          interfaces:
+            - name: eth0
+              bridge: {}
+          disks:
+            - name: sys-disk
+              disk:
+                bus: virtio
+            - name: cloudinit
+              disk:
+                bus: virtio
+      networks:
+        - name: eth0
+          multus:
+            networkName: br0-network
+      volumes:
+        - name: sys-disk
+          hostDisk:
+            path: /opt/k8s-workspace/images/cpu-node-2.raw
+            type: DiskOrCreate
+        - name: cloudinit
+          cloudInitNoCloud:
+            networkData: |
+              version: 2
+              ethernets:
+                enp1s0:
+                  addresses: [192.168.1.132/24]
+                  gateway4: 192.168.1.1
+                  nameservers:
+                    addresses: [223.5.5.5]
+            userData: |
+              #cloud-config
+              user: leo
+              password: leo
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+              runcmd:
+                - netplan apply

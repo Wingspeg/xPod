@@ -1,0 +1,19 @@
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: test-volcano-job
+  namespace: default
+spec:
+  minAvailable: 1
+  schedulerName: volcano
+  queue: default
+  tasks:
+    - replicas: 1
+      name: "hello-world"
+      template:
+        spec:
+          containers:
+            - image: docker.m.daocloud.io/library/busybox:latest
+              name: hello
+              command: ["echo", "Hello, Volcano is working!"]
+          restartPolicy: Never

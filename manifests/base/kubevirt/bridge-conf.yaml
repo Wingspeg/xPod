@@ -1,0 +1,13 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: br0-network
+spec:
+  config: '{
+      "cniVersion": "0.3.1",
+      "name": "br0-network",
+      "type": "bridge",
+      "bridge": "br0",
+      "promiscMode": true,
+      "ipam": {}
+    }'

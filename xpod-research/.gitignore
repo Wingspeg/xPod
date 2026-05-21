@@ -1,0 +1,55 @@
+# ============ xpod-research .gitignore ============
+
+# === 实验数据 ===
+results/raw/
+results/figures/*.svg
+*.csv
+!experiments/datagen/**/*.csv
+
+# === 原始数据集 ===
+datasets/
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === 日志 / 进程 ===
+*.log
+*.stdout
+*.pid
+nohup.out
+
+# === 临时文件 ===
+/tmp/xpod*.csv
+*.tmp
+
+# === Jupyter ===
+.ipynb_checkpoints/
+
+# === IDE ===
+.vscode/
+.idea/
+.qoder/
+*.swp
+.DS_Store
+
+# === 本地批量脚本 ===
+run_overnight.sh
+run_sensitivity.sh
+run_las_sensitivity.sh
+
+# === 根目录临时草稿 ===
+/xpod_worklog_*.md
+/section_*.md
+
+# === docs 不入库 ===
+docs/

@@ -1,0 +1,118 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: xpods.scheduling.xcloud.io
+spec:
+  group: scheduling.xcloud.io
+  scope: Namespaced
+  names:
+    plural: xpods
+    singular: xpod
+    kind: XPod
+    shortNames:
+      - xp
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                xpod_id:
+                  type: string
+                  description: XPod unique identifier
+                source:
+                  type: string
+                  description: Workload source identifier
+                compute:
+                  type: object
+                  description: Compute service spec (Volcano)
+                  properties:
+                    job_name:
+                      type: string
+                    scheduler:
+                      type: string
+                    queue:
+                      type: string
+                    gpu:
+                      type: integer
+                    cpu:
+                      type: string
+                    memory:
+                      type: string
+                    image:
+                      type: string
+                    replicas:
+                      type: integer
+                  x-kubernetes-preserve-unknown-fields: true
+                data:
+                  type: object
+                  description: Data service spec (Fluid)
+                  properties:
+                    dataset_name:
+                      type: string
+                    mount_point:
+                      type: string
+                    path:
+                      type: string
+                    runtime_type:
+                      type: string
+                    replicas:
+                      type: integer
+                  x-kubernetes-preserve-unknown-fields: true
+                algorithm:
+                  type: object
+                  description: Algorithm service spec (Koordinator)
+                  properties:
+                    name:
+                      type: string
+                    scheduler:
+                      type: string
+                    cpu:
+                      type: string
+                    memory:
+                      type: string
+                    image:
+                      type: string
+                    priority:
+                      type: integer
+                  x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum:
+                    - Pending
+                    - Running
+                    - Succeeded
+                    - Failed
+                compute_status:
+                  type: string
+                data_status:
+                  type: string
+                algorithm_status:
+                  type: string
+                start_time:
+                  type: string
+                completion_time:
+                  type: string
+                message:
+                  type: string
+              x-kubernetes-preserve-unknown-fields: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Source
+          type: string
+          jsonPath: .spec.source
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
