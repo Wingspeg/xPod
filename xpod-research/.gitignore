@@ -2,7 +2,8 @@
 
 # === 实验数据 ===
 results/raw/
-results/figures/*.svg
+results/figures/
+results/
 *.csv
 !experiments/datagen/**/*.csv
 
@@ -32,6 +33,11 @@ nohup.out
 /tmp/xpod*.csv
 *.tmp
 
+# === Backup files (server work-in-progress) ===
+*.bak.*
+*.bak
+*_bak_*
+
 # === Jupyter ===
 .ipynb_checkpoints/
 
@@ -46,10 +52,11 @@ nohup.out
 run_overnight.sh
 run_sensitivity.sh
 run_las_sensitivity.sh
+run_greedy.sh
 
 # === 根目录临时草稿 ===
 /xpod_worklog_*.md
 /section_*.md
 
-# === docs 不入库 ===
-docs/
+# === 跟 xpod-research 无关 (避免根目录 k8s-device-plugin/ 误入) ===
+/k8s-device-plugin/

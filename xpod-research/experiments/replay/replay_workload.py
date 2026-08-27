@@ -2,6 +2,7 @@
 # replay_workload.py: 回放 workload CSV，生成/提交 manifests，并落盘调度决策日志（含 run_id/mode 等实验可观测字段）。Modified: 2026-04-28
 import argparse
 import csv
+import json
 import heapq
 import logging
 import os
@@ -26,7 +27,15 @@ add_repo_import_paths()
 
 from scheduler.controller.xpodgen import io, specs, yamlutil  # noqa: E402
 from scheduler.controller.xpodgen.scheduler import ClusterConfig, NodeLoadTracker, ResourceCacheState, ServiceTracker  # noqa: E402
-from scheduler.xpod_scheduler import schedule_one_baseline, schedule_one_xpod  # noqa: E402
+from scheduler.xpod_scheduler import (
+    NodeHistory,
+    schedule_one_decoupled_cd,
+    schedule_one_firstfit_hash,
+    schedule_one_k8s_default,
+    schedule_one_pure_random,
+    schedule_one_tetris,
+    schedule_one_xpod,
+)  # noqa: E402
 
 
 def parse_number(x: Any, default: Optional[float] = None) -> Optional[float]:
@@ -113,12 +122,31 @@ def external_sort_by_ts(
 
     if limit is not None and limit > 0 and limit < IN_MEMORY_LIMIT_THRESHOLD:
         logger.info("limit=%d specified, using in-memory top-N selection", limit)
+        # Apply start_ts/end_ts window before top-N so limit+window compose correctly
+        import sys as _sys
+        _start_ts = None
+        _end_ts = None
+        for _i, _a in enumerate(_sys.argv):
+            if _a == "--start-ts" and _i + 1 < len(_sys.argv):
+                try:
+                    _start_ts = float(_sys.argv[_i + 1])
+                except ValueError:
+                    pass
+            elif _a == "--end-ts" and _i + 1 < len(_sys.argv):
+                try:
+                    _end_ts = float(_sys.argv[_i + 1])
+                except ValueError:
+                    pass
         def item_generator():
             nonlocal total, kept
             for row in read_rows(input_path):
                 total += 1
                 ts = row_submit_time(row, ts_field)
                 if ts is None:
+                    continue
+                if _start_ts is not None and ts < _start_ts:
+                    continue
+                if _end_ts is not None and ts > _end_ts:
                     continue
                 kept += 1
                 yield ReplayItem(ts, row)
@@ -216,6 +244,13 @@ def _parse_node_capacity(s: str) -> Dict[str, float]:
 
 
 def build_cluster(args: argparse.Namespace) -> ClusterConfig:
+    rack_map: Dict[str, str] = {}
+    if args.rack_map:
+        for kv in args.rack_map.split(","):
+            kv = kv.strip()
+            if ":" in kv:
+                k, v = kv.split(":", 1)
+                rack_map[k.strip()] = v.strip()
     return ClusterConfig(
         data_nodes=tuple(io.split_csv_list(args.data_nodes)),
         gpu_nodes=tuple(io.split_csv_list(args.gpu_nodes)),
@@ -224,6 +259,7 @@ def build_cluster(args: argparse.Namespace) -> ClusterConfig:
         base_latency_ms=args.base_latency_ms,
         base_bandwidth_mbps=args.base_bandwidth_mbps,
         algo_nodes=tuple(io.split_csv_list(args.algo_nodes)),
+        rack_map=rack_map if rack_map else None,
     )
 
 
@@ -409,10 +445,26 @@ def replay(
 
         load_tracker.release_until(ts)
 
-        if args.mode == "baseline":
-            logger.debug("schedule_one_baseline input job_id=%s row=%s", job_id, row)
-            decision = schedule_one_baseline(row, cluster, cache, service_tracker, load_tracker)
-            logger.debug("schedule_one_baseline output job_id=%s decision=%s", job_id, decision)
+        if args.mode == "pure_random":
+            logger.debug("schedule_one_pure_random input job_id=%s row=%s", job_id, row)
+            decision = schedule_one_pure_random(row, cluster, cache, service_tracker, load_tracker)
+            logger.debug("schedule_one_pure_random output job_id=%s decision=%s", job_id, decision)
+        elif args.mode == "firstfit_hash":
+            logger.debug("schedule_one_firstfit_hash input job_id=%s row=%s", job_id, row)
+            decision = schedule_one_firstfit_hash(row, cluster, cache, service_tracker, load_tracker)
+            logger.debug("schedule_one_firstfit_hash output job_id=%s decision=%s", job_id, decision)
+        elif args.mode == "k8s_default":
+            logger.debug("schedule_one_k8s_default input job_id=%s row=%s", job_id, row)
+            decision = schedule_one_k8s_default(row, cluster, cache, service_tracker, load_tracker)
+            logger.debug("schedule_one_k8s_default output job_id=%s decision=%s", job_id, decision)
+        elif args.mode == "decoupled_cd":
+            logger.debug("schedule_one_decoupled_cd input job_id=%s row=%s", job_id, row)
+            decision = schedule_one_decoupled_cd(row, cluster, cache, service_tracker, load_tracker)
+            logger.debug("schedule_one_decoupled_cd output job_id=%s decision=%s", job_id, decision)
+        elif args.mode == "tetris":
+            logger.debug("schedule_one_tetris input job_id=%s row=%s", job_id, row)
+            decision = schedule_one_tetris(row, cluster, cache, service_tracker, load_tracker)
+            logger.debug("schedule_one_tetris output job_id=%s decision=%s", job_id, decision)
         else:
             logger.debug("schedule_one_xpod input job_id=%s row=%s attempted=%d", job_id, row, attempted)
             decision = schedule_one_xpod(
@@ -425,9 +477,21 @@ def replay(
                 alpha=args.xpod_alpha,
                 beta=args.xpod_beta,
                 gamma=args.xpod_gamma,
+                xpod_dim=args.xpod_dim,
                 enable_hash_tiebreak=(not args.disable_hash_tiebreak),
                 enable_las_priority=(not args.disable_las_priority),
                 enable_contention=(not args.disable_contention),
+                enable_compute_hash=args.enable_compute_hash,
+                enable_data_hash=args.enable_data_hash,
+                enable_algo_hash=args.enable_algo_hash,
+                cache_bonus=args.cache_bonus,
+                rack_bonus=args.rack_bonus,
+                popularity_weight=args.popularity_weight,
+                dataset_popularity=args.dataset_popularity,
+                image_popularity=args.image_popularity,
+                look_ahead_penalty=args.look_ahead_penalty,
+                look_ahead_window=args.look_ahead_window,
+                node_history=args.node_history,
             )
             logger.debug("schedule_one_xpod output job_id=%s decision=%s", job_id, decision)
         if decision is None:
@@ -575,7 +639,15 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--end-ts", type=float, default=None)
     ap.add_argument("--namespace", default="default")
 
-    ap.add_argument("--mode", choices=["xpod", "baseline"], default="xpod")
+    ap.add_argument(
+        "--mode",
+        choices=["xpod", "pure_random", "firstfit_hash", "k8s_default", "decoupled_cd", "tetris"],
+        default="xpod",
+        help="Scheduler routing: xpod=3-dim argmin; pure_random=uniform (no cache); "
+             "firstfit_hash=least-loaded c + consistent-hash d/a; k8s_default=K8s first-available; "
+             "decoupled_cd=Tiresias 2D-LAS + Quiver consistent-hash; "
+             "tetris=3-dim max-min remaining capacity (Grandl et al. SIGCOMM'14).",
+    )
     ap.add_argument("--run-id", default=datetime.now().strftime("%Y%m%d_%H%M%S"))
 
     ap.add_argument("--apply", action="store_true")
@@ -597,8 +669,8 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--node-capacity", default="gpu-node-1:1,data-node-1:1,data-node-2:1,algo-node-1:1,cpu-node-1:4,cpu-node-2:4",
                     help="节点容量配置，格式: node1:cap1,node2:cap2,...")
     ap.add_argument("--seed", type=int, default=2020)
-    ap.add_argument("--base-latency-ms", type=float, default=2.0)
-    ap.add_argument("--base-bandwidth-mbps", type=float, default=2000.0)
+    ap.add_argument("--base-latency-ms", type=float, default=30.0)
+    ap.add_argument("--base-bandwidth-mbps", type=float, default=200.0)
     ap.add_argument("--alpha", type=float, default=1.0)
     ap.add_argument("--beta", type=float, default=1.0)
     ap.add_argument("--gamma", type=float, default=0.1)
@@ -606,9 +678,23 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--xpod-alpha", type=float, default=1.0)
     ap.add_argument("--xpod-beta", type=float, default=1.5)
     ap.add_argument("--xpod-gamma", type=float, default=0.8)
-    ap.add_argument("--disable-hash-tiebreak", action="store_true", help="关闭 hash tie-break,用于 ablation 实验")
+    ap.add_argument("--xpod-dim", type=int, default=3, choices=[1, 2, 3], help="1=compute-only, 2=compute+data, 3=compute+data+algo")
+    ap.add_argument("--disable-hash-tiebreak", action="store_true", help="关闭 hash tie-break (master switch),用于 ablation 实验")
     ap.add_argument("--disable-las-priority", action="store_true", help="关闭 Tiresias 2D-LAS,用于 ablation 实验")
     ap.add_argument("--disable-contention", action="store_true", help="关闭 contention-aware t_compute,用于 ablation 实验")
+    ap.add_argument("--no-compute-hash", action="store_true", help="(legacy) 关闭 compute 维度 hash, 现在 default 已经是 enumerate, 此 flag 是 no-op")
+    ap.add_argument("--no-data-hash", action="store_true", help="(legacy) 同上, no-op")
+    ap.add_argument("--no-algo-hash", action="store_true", help="(legacy) 同上, no-op")
+    ap.add_argument("--enable-compute-hash", action="store_true", help="ablation: 启用 c 维度 consistent-hash, d/a 仍 enumerate")
+    ap.add_argument("--enable-data-hash", action="store_true", help="ablation: 启用 d 维度 consistent-hash, c/a 仍 enumerate")
+    ap.add_argument("--enable-algo-hash", action="store_true", help="ablation: 启用 a 维度 consistent-hash, c/d 仍 enumerate")
+    ap.add_argument("--rack-map", default="", help="逗号分隔的 rack_map, 格式 node1:rack1,node2:rack2,...; 空=不启用 rack-aware topology")
+    ap.add_argument("--cache-bonus", type=float, default=1.0, help="cache hit 基础奖励 (score -= cache_bonus * cached_dims)")
+    ap.add_argument("--rack-bonus", type=float, default=0.5, help="same-rack 奖励 (score -= rack_bonus * same_rack_dims)")
+    ap.add_argument("--popularity-weight", type=float, default=1.0, help="A: dataset/image popularity 加权 (cache_bonus += popularity_weight * log1p(pop))")
+    ap.add_argument("--popularity-json", default="", help="path to pre-scan popularity JSON (dataset_popularity + image_popularity)")
+    ap.add_argument("--look-ahead-penalty", type=float, default=1.0, help="B: look-ahead contention penalty coefficient")
+    ap.add_argument("--look-ahead-window", type=int, default=1000, help="B: sliding window size (number of recent tasks per c)")
     args = ap.parse_args(argv)
 
     from scheduler.logging_config import setup_logging
@@ -626,6 +712,23 @@ def main(argv: List[str]) -> int:
 
     cluster = build_cluster(args)
     capacity = _parse_node_capacity(args.node_capacity)
+
+    # Load popularity dict (A: dataset/image popularity-aware cache bonus)
+    dataset_popularity = None
+    image_popularity = None
+    if args.popularity_json and os.path.exists(args.popularity_json):
+        with open(args.popularity_json, "r", encoding="utf-8") as f:
+            pop = json.load(f)
+        dataset_popularity = pop.get("dataset_popularity", {})
+        image_popularity = pop.get("image_popularity", {})
+        logger.info("loaded popularity: %d datasets, %d images", len(dataset_popularity), len(image_popularity))
+
+    # Create node history (B: sliding window look-ahead contention)
+    node_history = NodeHistory(window=args.look_ahead_window)
+    # Attach to args for replay() to use
+    args.dataset_popularity = dataset_popularity
+    args.image_popularity = image_popularity
+    args.node_history = node_history
 
     limit_arg = args.limit if args.limit and args.limit > 0 else None
 

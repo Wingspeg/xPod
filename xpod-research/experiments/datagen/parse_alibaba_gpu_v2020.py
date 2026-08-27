@@ -154,15 +154,126 @@ def weighted_choice(rng, weighted_items):
 
 
 def default_dataset_catalog():
+    """50+ datasets covering CV/NLP/Speech/Tabular/Graph/TimeSeries domains.
+    Sized to give 30-50% dataset cache hit rate at 4 data_node (2026-08-24)."""
     gi = 1024**3
+    mi = 1024**2
     return [
-        {"dataset_id": "imagenet", "size_bytes": 150 * gi, "object_count": 1500000, "hot_fraction": 0.2},
+        # Vision - large
+        {"dataset_id": "imagenet", "size_bytes": 150 * gi, "object_count": 1500000, "hot_fraction": 0.20},
+        {"dataset_id": "OpenImages", "size_bytes": 500 * gi, "object_count": 9000000, "hot_fraction": 0.08},
         {"dataset_id": "coco", "size_bytes": 25 * gi, "object_count": 300000, "hot_fraction": 0.25},
+        {"dataset_id": "Places365", "size_bytes": 180 * gi, "object_count": 1800000, "hot_fraction": 0.10},
+        {"dataset_id": "cityscapes", "size_bytes": 12 * gi, "object_count": 25000, "hot_fraction": 0.05},
+        {"dataset_id": "ADE20K", "size_bytes": 20 * gi, "object_count": 25000, "hot_fraction": 0.04},
+        {"dataset_id": "LVIS", "size_bytes": 80 * gi, "object_count": 2000000, "hot_fraction": 0.06},
+        # Vision - small/medium
+        {"dataset_id": "CIFAR-10", "size_bytes": 170 * mi, "object_count": 60000, "hot_fraction": 0.05},
+        {"dataset_id": "CIFAR-100", "size_bytes": 160 * mi, "object_count": 60000, "hot_fraction": 0.04},
+        {"dataset_id": "MNIST", "size_bytes": 12 * mi, "object_count": 70000, "hot_fraction": 0.05},
+        {"dataset_id": "FashionMNIST", "size_bytes": 30 * mi, "object_count": 70000, "hot_fraction": 0.03},
+        {"dataset_id": "ImageNet-100", "size_bytes": 7 * gi, "object_count": 130000, "hot_fraction": 0.06},
+        {"dataset_id": "StanfordCars", "size_bytes": 2 * gi, "object_count": 16000, "hot_fraction": 0.04},
+        {"dataset_id": "Flowers102", "size_bytes": 350 * mi, "object_count": 8000, "hot_fraction": 0.03},
+        {"dataset_id": "Food101", "size_bytes": 5 * gi, "object_count": 100000, "hot_fraction": 0.04},
+        {"dataset_id": "celeba", "size_bytes": 30 * gi, "object_count": 200000, "hot_fraction": 0.05},
+        # NLP / Text
         {"dataset_id": "wikitext", "size_bytes": 5 * gi, "object_count": 50000, "hot_fraction": 0.35},
+        {"dataset_id": "C4", "size_bytes": 750 * gi, "object_count": 300000000, "hot_fraction": 0.10},
+        {"dataset_id": "BookCorpus", "size_bytes": 5 * gi, "object_count": 11000000, "hot_fraction": 0.08},
+        {"dataset_id": "OpenWebText", "size_bytes": 38 * gi, "object_count": 8000000, "hot_fraction": 0.06},
+        {"dataset_id": "PubMed", "size_bytes": 20 * gi, "object_count": 25000000, "hot_fraction": 0.05},
+        {"dataset_id": "StackExchange", "size_bytes": 60 * gi, "object_count": 15000000, "hot_fraction": 0.04},
+        {"dataset_id": "ArXiv", "size_bytes": 12 * gi, "object_count": 1700000, "hot_fraction": 0.03},
+        {"dataset_id": "Gutenberg", "size_bytes": 8 * gi, "object_count": 70000, "hot_fraction": 0.03},
+        {"dataset_id": "CC100", "size_bytes": 250 * gi, "object_count": 100000000, "hot_fraction": 0.05},
+        # Speech / Audio
         {"dataset_id": "librispeech", "size_bytes": 60 * gi, "object_count": 200000, "hot_fraction": 0.15},
+        {"dataset_id": "AudioSet", "size_bytes": 100 * gi, "object_count": 2000000, "hot_fraction": 0.04},
+        {"dataset_id": "VoxCeleb", "size_bytes": 40 * gi, "object_count": 1500000, "hot_fraction": 0.04},
+        {"dataset_id": "CommonVoice", "size_bytes": 25 * gi, "object_count": 1500000, "hot_fraction": 0.05},
+        {"dataset_id": "LJSpeech", "size_bytes": 3 * gi, "object_count": 13000, "hot_fraction": 0.03},
+        {"dataset_id": "FMA", "size_bytes": 80 * gi, "object_count": 100000, "hot_fraction": 0.03},
+        # Tabular / Recommendation / Logs
         {"dataset_id": "clicklog", "size_bytes": 500 * gi, "object_count": 50000000, "hot_fraction": 0.05},
-        {"dataset_id": "embedding", "size_bytes": 80 * gi, "object_count": 1000, "hot_fraction": 0.6},
+        {"dataset_id": "embedding", "size_bytes": 80 * gi, "object_count": 1000, "hot_fraction": 0.60},
+        {"dataset_id": "Criteo", "size_bytes": 70 * gi, "object_count": 45000000, "hot_fraction": 0.04},
+        {"dataset_id": "MovieLens-25M", "size_bytes": 250 * mi, "object_count": 25000000, "hot_fraction": 0.05},
+        {"dataset_id": "AmazonReviews", "size_bytes": 8 * gi, "object_count": 23000000, "hot_fraction": 0.04},
+        {"dataset_id": "AlibabaTrace", "size_bytes": 100 * gi, "object_count": 1000000000, "hot_fraction": 0.04},
+        {"dataset_id": "NYC-Taxi", "size_bytes": 18 * gi, "object_count": 200000000, "hot_fraction": 0.03},
+        {"dataset_id": "wikipedia-2024", "size_bytes": 90 * gi, "object_count": 65000000, "hot_fraction": 0.04},
+        # Graph
+        {"dataset_id": "ogbn-papers100M", "size_bytes": 50 * gi, "object_count": 111000000, "hot_fraction": 0.04},
+        {"dataset_id": "ogbn-products", "size_bytes": 2 * gi, "object_count": 2400000, "hot_fraction": 0.05},
+        {"dataset_id": "Reddit", "size_bytes": 30 * gi, "object_count": 50000000, "hot_fraction": 0.03},
+        {"dataset_id": "MAG-Scholar", "size_bytes": 12 * gi, "object_count": 40000000, "hot_fraction": 0.03},
+        # Video / TimeSeries
+        {"dataset_id": "Kinetics", "size_bytes": 400 * gi, "object_count": 650000, "hot_fraction": 0.05},
+        {"dataset_id": "YouTube-8M", "size_bytes": 1.5 * 1024 * gi, "object_count": 8000000, "hot_fraction": 0.04},
+        {"dataset_id": "UCF101", "size_bytes": 7 * gi, "object_count": 13000, "hot_fraction": 0.03},
+        {"dataset_id": "Something-Something", "size_bytes": 30 * gi, "object_count": 220000, "hot_fraction": 0.03},
+        {"dataset_id": "Electricity", "size_bytes": 2 * gi, "object_count": 1000000, "hot_fraction": 0.04},
+        {"dataset_id": "ETTh1", "size_bytes": 12 * mi, "object_count": 17000, "hot_fraction": 0.04},
+        {"dataset_id": "WTH", "size_bytes": 800 * mi, "object_count": 500000, "hot_fraction": 0.04},
+        # 3D / Point Cloud
+        {"dataset_id": "KITTI", "size_bytes": 15 * gi, "object_count": 80000, "hot_fraction": 0.03},
+        {"dataset_id": "ShapeNet", "size_bytes": 30 * gi, "object_count": 5000000, "hot_fraction": 0.03},
+        {"dataset_id": "ScanNet", "size_bytes": 1.5 * 1024 * gi, "object_count": 2500000, "hot_fraction": 0.02},
     ]
+
+
+# PAI framework name -> academic framework name, split by compute_type (2026-08-24)
+PAI_TO_ACADEMIC_FRAMEWORK_GPU = {
+    "tensorflow":        "TensorFlow",
+    "PyTorchWorker":     "PyTorch",
+    "worker":            "TensorFlow",
+    "ps":                "TensorFlow",
+    "xComputeWorker":    "PyTorch",
+    "TensorboardTask":   "TensorFlow",
+    "evaluator":         "PyTorch",
+    "DecoderWorker":     "PyTorch",
+    "ReduceTask":        "TVM",
+    "JupyterTask":       "PyTorch-Lightning",
+    "TVMTuneMain":       "TVM",
+    "OpenmpiTracker":    "Horovod",
+    "OpenmpiWorker":     "Horovod",
+    "OssToVolumeWorker": "PyTorch",
+    "MWorker":           "PyTorch",
+    "chief":             "TensorFlow",
+    "BladeMain":         "PyTorch",
+    "aligraph":          "AliGraph",
+    "TransformGraph":    "TensorFlow",
+    "M1":                "PyTorch",
+}
+PAI_TO_ACADEMIC_FRAMEWORK_CPU = {
+    "tensorflow":        "TensorFlow-serving",
+    "PyTorchWorker":     "PyTorch-Lightning",
+    "worker":            "ONNXRuntime",
+    "ps":                "TensorFlow-serving",
+    "xComputeWorker":    "PyTorch-Lightning",
+    "TensorboardTask":   "TensorFlow-serving",
+    "evaluator":         "scikit-learn",
+    "DecoderWorker":     "PyTorch-Lightning",
+    "ReduceTask":        "MapReduce",
+    "JupyterTask":       "Python-notebook",
+    "TVMTuneMain":       "TVM",
+    "OpenmpiTracker":    "Horovod",
+    "OpenmpiWorker":     "Horovod",
+    "OssToVolumeWorker": "Python-script",
+    "MWorker":           "scikit-learn",
+    "chief":             "TensorFlow-serving",
+    "BladeMain":         "PyTorch-Lightning",
+    "aligraph":          "DeepDetect",
+    "TransformGraph":    "TensorFlow-serving",
+    "M1":                "PyTorch-Lightning",
+}
+
+# GPU-only / CPU-only / shared framework pools (5 + 5 + 7 = 17 framework, matches paper)
+GPU_FRAMEWORKS = ["TensorFlow", "PyTorch", "JAX", "MXNet", "PaddlePaddle"]
+CPU_FRAMEWORKS = ["TensorFlow-serving", "ONNXRuntime", "scikit-learn", "Spark-ML", "Ray"]
+SHARED_FRAMEWORKS = ["TVM", "Horovod", "AliGraph", "TensorFlow-Lite", "PyTorch-Lightning",
+                     "DeepDetect", "MapReduce"]
 
 
 def pick_algorithm_type(rng, framework, compute_type):
@@ -173,20 +284,80 @@ def pick_algorithm_type(rng, framework, compute_type):
         if "pytorch" in fw:
             return weighted_choice(rng, [("Transformer", 0.45), ("CNN", 0.3), ("GNN", 0.15), ("RL", 0.1)])
         return weighted_choice(rng, [("CNN", 0.35), ("Transformer", 0.35), ("GNN", 0.2), ("RL", 0.1)])
-    return weighted_choice(rng, [("ETL", 0.35), ("Preprocess", 0.25), ("Inference", 0.2), ("Feature", 0.15), ("Search", 0.05)])
+    return weighted_choice(rng, [("ETL", 0.30), ("Preprocess", 0.22), ("Inference", 0.18), ("Feature", 0.13), ("Search", 0.05), ("Speech", 0.12)])
 
 
 def pick_dataset_id(rng, algo_type):
+    """50+ datasets mapped by algo_type domain (2026-08-24).
+    1.74M tasks distributed across 50+ datasets for 30-50% cache hit at 4 data_node."""
     m = {
-        "CNN": [("imagenet", 0.6), ("coco", 0.4)],
-        "Transformer": [("wikitext", 0.55), ("clicklog", 0.45)],
-        "GNN": [("clicklog", 0.7), ("embedding", 0.3)],
-        "RL": [("embedding", 0.6), ("clicklog", 0.4)],
-        "ETL": [("clicklog", 0.75), ("wikitext", 0.25)],
-        "Preprocess": [("coco", 0.4), ("imagenet", 0.3), ("clicklog", 0.3)],
-        "Inference": [("embedding", 0.6), ("wikitext", 0.4)],
-        "Feature": [("clicklog", 0.6), ("embedding", 0.4)],
-        "Search": [("embedding", 0.7), ("clicklog", 0.3)],
+        # CNN: vision large + small
+        "CNN": [
+            ("imagenet", 0.20), ("OpenImages", 0.10), ("coco", 0.08), ("Places365", 0.08),
+            ("CIFAR-10", 0.08), ("CIFAR-100", 0.05), ("MNIST", 0.05), ("celeba", 0.06),
+            ("StanfordCars", 0.05), ("Flowers102", 0.04), ("Food101", 0.05), ("FashionMNIST", 0.04),
+            ("ImageNet-100", 0.06), ("ADE20K", 0.03), ("LVIS", 0.03),
+        ],
+        # Transformer: NLP/text + logs
+        "Transformer": [
+            ("clicklog", 0.040), ("wikitext", 0.06), ("C4", 0.10), ("BookCorpus", 0.08),
+            ("OpenWebText", 0.08), ("PubMed", 0.06), ("embedding", 0.02), ("AudioSet", 0.05),
+            ("ArXiv", 0.05), ("Gutenberg", 0.04), ("wikipedia-2024", 0.05), ("CC100", 0.05),
+            ("AlibabaTrace", 0.04),
+        ],
+        # GNN: graph + tabular
+        "GNN": [
+            ("clicklog", 0.04), ("embedding", 0.020), ("ogbn-papers100M", 0.10),
+            ("ogbn-products", 0.08), ("Reddit", 0.08), ("MAG-Scholar", 0.08),
+            ("OpenImages", 0.06), ("Criteo", 0.08), ("AmazonReviews", 0.07),
+            ("MovieLens-25M", 0.06), ("AlibabaTrace", 0.07), ("wikipedia-2024", 0.07),
+        ],
+        # RL: mixed, mostly embedding + video
+        "RL": [
+            ("embedding", 0.050), ("clicklog", 0.030), ("Kinetics", 0.12), ("YouTube-8M", 0.10),
+            ("UCF101", 0.08), ("Something-Something", 0.07), ("CIFAR-10", 0.06),
+            ("OpenImages", 0.06), ("MNIST", 0.05), ("AudioSet", 0.05), ("KITTI", 0.06),
+            ("ShapeNet", 0.05),
+        ],
+        # ETL: logs + tabular
+        "ETL": [
+            ("clicklog", 0.04), ("wikitext", 0.10), ("Criteo", 0.10), ("AmazonReviews", 0.08),
+            ("AlibabaTrace", 0.10), ("NYC-Taxi", 0.08), ("AudioSet", 0.05), ("embedding", 0.08),
+            ("PubMed", 0.05), ("StackExchange", 0.05), ("wikipedia-2024", 0.06),
+        ],
+        # Preprocess: vision + tabular
+        "Preprocess": [
+            ("coco", 0.12), ("imagenet", 0.10), ("clicklog", 0.040), ("CIFAR-10", 0.08),
+            ("Places365", 0.08), ("MNIST", 0.06), ("celeba", 0.06), ("OpenImages", 0.07),
+            ("Food101", 0.05), ("StanfordCars", 0.05), ("ImageNet-100", 0.05),
+            ("ADE20K", 0.04), ("cityscapes", 0.05), ("Flowers102", 0.04), ("FashionMNIST", 0.05),
+        ],
+        # Inference: small + multi-modal
+        "Inference": [
+            ("embedding", 0.025), ("CIFAR-10", 0.10), ("MNIST", 0.08), ("Kinetics", 0.08),
+            ("AudioSet", 0.06), ("librispeech", 0.05), ("clicklog", 0.08), ("imagenet", 0.06),
+            ("Food101", 0.05), ("Flowers102", 0.04), ("ETTh1", 0.05), ("WTH", 0.04),
+            ("StanfordCars", 0.04), ("CommonVoice", 0.04), ("VoxCeleb", 0.04), ("KITTI", 0.04),
+        ],
+        # Feature: logs + tabular
+        "Feature": [
+            ("clicklog", 0.04), ("embedding", 0.020), ("MNIST", 0.06), ("Criteo", 0.10),
+            ("AmazonReviews", 0.08), ("MovieLens-25M", 0.07), ("CIFAR-10", 0.06),
+            ("AlibabaTrace", 0.10), ("wikipedia-2024", 0.05), ("WTH", 0.05),
+            ("ETTh1", 0.05), ("Electricity", 0.05), ("StackExchange", 0.05),
+        ],
+        # Search: misc
+        "Search": [
+            ("clicklog", 0.040), ("embedding", 0.10), ("CIFAR-10", 0.08), ("AlibabaTrace", 0.10),
+            ("wikipedia-2024", 0.08), ("AmazonReviews", 0.08), ("Criteo", 0.08),
+            ("NYC-Taxi", 0.06), ("AudioSet", 0.05), ("MNIST", 0.05), ("WTH", 0.05),
+            ("ETTh1", 0.04), ("Electricity", 0.03),
+        ],
+        # Speech: audio
+        "Speech": [
+            ("librispeech", 0.30), ("AudioSet", 0.20), ("VoxCeleb", 0.15),
+            ("CommonVoice", 0.15), ("LJSpeech", 0.10), ("FMA", 0.10),
+        ],
     }
     return weighted_choice(rng, m.get(algo_type, [("clicklog", 1.0)]))
 
@@ -349,7 +520,15 @@ def extract_instances(
         compute_type = "GPU" if classify_gpu(task_res) else "CPU"
 
         rng = stable_rng(seed, "task", task_id)
-        framework = task_res.get("framework") or ""
+        # Map PAI framework name to academic name, split by compute_type (2026-08-24)
+        raw_fw = task_res.get("framework") or ""
+        fw_pool = (GPU_FRAMEWORKS + SHARED_FRAMEWORKS) if compute_type == "GPU" else (CPU_FRAMEWORKS + SHARED_FRAMEWORKS)
+        fw_map = PAI_TO_ACADEMIC_FRAMEWORK_GPU if compute_type == "GPU" else PAI_TO_ACADEMIC_FRAMEWORK_CPU
+        academic_fw = fw_map.get(raw_fw)
+        if academic_fw in fw_pool:
+            framework = academic_fw
+        else:
+            framework = rng.choice(fw_pool)
         algo_type = pick_algorithm_type(rng, framework, compute_type)
         qos = pick_qos(rng, algo_type)
         prio = qos_to_priority(qos)
@@ -381,7 +560,8 @@ def extract_instances(
 
         bs = int(weighted_choice(rng, [(16, 0.2), (32, 0.35), (64, 0.3), (128, 0.15)]))
         lr = round(10 ** (-4 + rng.random() * 2.0), 8)
-        image = f"{(framework or 'generic').lower()}-{algo_type.lower()}:latest"
+        image_ver = int(rng.random() * 7) + 1  # 1..7 versions
+        image = f"{(framework or 'generic').lower()}-{algo_type.lower()}-v{image_ver}:latest"
 
         dataset_id = pick_dataset_id(rng, algo_type)
         ds = dataset_by_id.get(dataset_id) or {"size_bytes": 0}
@@ -435,7 +615,16 @@ def extract_instances(
                 synth_id = f"syn-cpu-{task_id}-{cpu_synth_written}"
                 rngs = stable_rng(seed, "syn_cpu", synth_id)
 
-                algo_type_s = pick_algorithm_type(rngs, framework, "CPU")
+                # Re-map framework to CPU academic name (synthetic is always CPU)
+                fw_pool_s = CPU_FRAMEWORKS + SHARED_FRAMEWORKS
+                fw_map_s = PAI_TO_ACADEMIC_FRAMEWORK_CPU
+                academic_fw_s = fw_map_s.get(framework)
+                if academic_fw_s in fw_pool_s:
+                    framework_s = academic_fw_s
+                else:
+                    framework_s = rngs.choice(fw_pool_s)
+                algo_type_s = pick_algorithm_type(rngs, framework_s, "CPU")
+                image_ver_s = int(rngs.random() * 7) + 1
                 qos_s = pick_qos(rngs, algo_type_s)
                 prio_s = qos_to_priority(qos_s)
                 sla_s = qos_to_sla_ms(qos_s)
@@ -444,7 +633,7 @@ def extract_instances(
                 wait_s = exp_sample(rngs, {"gold": 2.0, "silver": 10.0, "bronze": 30.0}.get(qos_s, 10.0))
 
                 start_s = submit_s + wait_s
-                dur_mean = {"ETL": 120.0, "Preprocess": 45.0, "Inference": 8.0, "Feature": 25.0, "Search": 5.0}.get(algo_type_s, 30.0)
+                dur_mean = {"ETL": 120.0, "Preprocess": 45.0, "Inference": 8.0, "Feature": 25.0, "Search": 5.0, "Speech": 30.0}.get(algo_type_s, 30.0)
                 duration_s = max(0.01, exp_sample(rngs, dur_mean))
                 end_s = start_s + duration_s
 
@@ -470,9 +659,9 @@ def extract_instances(
                         "gpu_type": "",
                         "gang_size": 1,
                         "topology_req": "none",
-                        "algorithm_framework": framework,
+                        "algorithm_framework": framework_s,
                         "algorithm_type": algo_type_s,
-                        "algorithm_image": f"{(framework or 'generic').lower()}-{algo_type_s.lower()}:latest",
+                        "algorithm_image": f"{(framework_s or 'generic').lower()}-{algo_type_s.lower()}-v{image_ver_s}:latest",
                         "batch_size": int(weighted_choice(rngs, [(16, 0.2), (32, 0.35), (64, 0.3), (128, 0.15)])),
                         "learning_rate": round(10 ** (-4 + rngs.random() * 2.0), 8),
                         "qos_class": qos_s,

@@ -1,9 +1,22 @@
 import logging
+import re
 from typing import Any, Dict
 
 from .scheduler import ScheduleDecision, as_float, as_int, fmt_cpu, fmt_mem_gi
 
 logger = logging.getLogger(__name__)
+
+
+def _k8s_safe_name(name: str) -> str:
+    """Convert a name to RFC 1123 compliant: lowercase, [a-z0-9-.] only,
+    must start and end with alphanumeric. Used for K8s resource names that
+    are derived from user-supplied dataset_id / algorithm_image which may
+    contain uppercase or special characters (e.g. 'Criteo', 'Food101')."""
+    s = re.sub(r"[^a-z0-9.-]", "-", name.lower())
+    s = re.sub(r"^[^a-z0-9]+", "", s)
+    s = re.sub(r"[^a-z0-9]+$", "", s)
+    s = re.sub(r"-+", "-", s)
+    return s or "x"
 
 
 def build_xpod_manifest(row: Dict[str, str], decision: ScheduleDecision, namespace: str) -> Dict[str, Any]:
@@ -140,7 +153,7 @@ def build_volcano_job_manifest(
 
 def build_fluid_dataset_manifest(row: Dict[str, str], decision: ScheduleDecision, namespace: str) -> Dict[str, Any]:
     dataset_id = row.get("dataset_id") or "dataset"
-    name = f"ds-{dataset_id}"
+    name = f"ds-{_k8s_safe_name(dataset_id)}"
     return {
         "apiVersion": "data.fluid.io/v1alpha1",
         "kind": "Dataset",
@@ -170,7 +183,7 @@ def build_fluid_dataset_manifest(row: Dict[str, str], decision: ScheduleDecision
 
 def build_fluid_runtime_manifest(row: Dict[str, str], decision: ScheduleDecision, namespace: str) -> Dict[str, Any]:
     dataset_id = row.get("dataset_id") or "dataset"
-    name = f"rt-{dataset_id}"
+    name = f"rt-{_k8s_safe_name(dataset_id)}"
     return {
         "apiVersion": "data.fluid.io/v1alpha1",
         "kind": "AlluxioRuntime",

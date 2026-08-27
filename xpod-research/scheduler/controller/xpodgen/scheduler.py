@@ -47,6 +47,7 @@ class ClusterConfig:
     base_latency_ms: float
     base_bandwidth_mbps: float
     algo_nodes: Tuple[str, ...] = ()
+    rack_map: Optional[Dict[str, str]] = None  # node_name -> rack_id; None = use prefix-based fallback
 
     def candidates_for_compute_type(self, compute_type: str) -> Tuple[str, ...]:
         if (compute_type or "").upper() == "GPU":
@@ -57,10 +58,24 @@ class ClusterConfig:
         if not data_node or not compute_node:
             return self.base_latency_ms, self.base_bandwidth_mbps
         if data_node == compute_node:
-            return clamp(self.base_latency_ms * 0.25, 0.1, 10.0), clamp(self.base_bandwidth_mbps * 5.0, 100.0, 100000.0)
+            return clamp(self.base_latency_ms * 0.25, 0.1, 100.0), clamp(self.base_bandwidth_mbps * 5.0, 100.0, 100000.0)
+        # rack_map takes precedence over prefix-based fallback
+        if (self.rack_map is not None
+                and data_node in self.rack_map
+                and compute_node in self.rack_map
+                and self.rack_map[data_node] == self.rack_map[compute_node]):
+            return clamp(self.base_latency_ms * 0.5, 0.1, 100.0), clamp(self.base_bandwidth_mbps * 2.0, 100.0, 100000.0)
         if data_node.split("-")[0] == compute_node.split("-")[0]:
-            return clamp(self.base_latency_ms * 0.5, 0.1, 10.0), clamp(self.base_bandwidth_mbps * 2.0, 100.0, 100000.0)
+            return clamp(self.base_latency_ms * 0.5, 0.1, 100.0), clamp(self.base_bandwidth_mbps * 2.0, 100.0, 100000.0)
         return self.base_latency_ms, self.base_bandwidth_mbps
+
+    def same_rack(self, a_node: str, b_node: str) -> bool:
+        """True if a and b are in the same rack (per rack_map), False otherwise."""
+        if self.rack_map is None:
+            return False
+        return (a_node in self.rack_map
+                and b_node in self.rack_map
+                and self.rack_map[a_node] == self.rack_map[b_node])
 
     def all_data_nodes(self) -> Tuple[str, ...]:
         return self.data_nodes
@@ -88,6 +103,15 @@ class ResourceCacheState:
     def mark_image_cached(self, algo_node: str, image: str) -> None:
         self._image_on_algo_node.setdefault(algo_node, set()).add(image)
 
+    def cached_dataset_count(self, data_node: str) -> int:
+        """Number of distinct datasets currently cached on this data node.
+        Used by Tetris (multi-resource packing) to compute remaining capacity.
+        """
+        return len(self._dataset_on_data_node.get(data_node, set()))
+
+    def cached_image_count(self, algo_node: str) -> int:
+        """Number of distinct algorithm images currently cached on this algo node."""
+        return len(self._image_on_algo_node.get(algo_node, set()))
 
 class ServiceTracker:
     """跟踪每个 xPod 的累计 attained service。
@@ -119,6 +143,7 @@ class NodeLoadTracker:
     def __init__(self, capacity: Dict[str, float]) -> None:
         self._capacity: Dict[str, float] = dict(capacity)
         self._active: Dict[str, list] = {n: [] for n in capacity}
+        self._next_free: Dict[str, float] = {}  # next available time per node (for O(1) queue)
 
     def release_until(self, current_time_s: float) -> None:
         for node, tasks in self._active.items():
@@ -131,6 +156,7 @@ class NodeLoadTracker:
         return self._capacity.get(node, 1.0)
 
     def contention_factor(self, node: str, new_load: float) -> float:
+        """Reverted to v2-style O(N) contention (sum active loads)."""
         cap = self.capacity_of(node)
         total = self.current_load(node) + max(0.0, new_load)
         return max(1.0, total / max(1e-9, cap))
@@ -139,6 +165,21 @@ class NodeLoadTracker:
         if node not in self._active:
             self._active[node] = []
         self._active[node].append((float(release_time_s), float(max(0.0, load_units))))
+
+    def try_acquire(self, node: str, submit_time_s: float, service_time_s: float,
+                    load_units: float) -> Tuple[float, float]:
+        """Real O(1) queue (v7: 4 mode routing trade-off).
+
+        start = max(submit_time, next_free[node])  # wait if node busy
+        finish = start + service_time
+        next_free[node] = finish  # node busy until then
+
+        JCT = finish - submit_time = wait_time + service_time.
+        """
+        start = max(float(submit_time_s), self._next_free.get(node, 0.0))
+        finish = start + max(0.0, float(service_time_s))
+        self._next_free[node] = finish
+        return start, finish
 
 
 @dataclass
