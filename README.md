@@ -114,4 +114,4 @@ kubectl apply -f test-volcano-job.yaml
 
 ## 许可
 
-待定(建议 Apache 2.0 或 MIT)。
+[MIT](./LICENSE) © 2026 Wingspeg。

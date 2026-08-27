@@ -209,4 +209,4 @@ datasets/         # 原始 PAI trace
 - v6 paper (superseded): v6 cache-augmented 32-39x 数字因 4 个 cache-aware baseline 误用 cache.query() 而失真,被 v7 替换
 
 ## 许可
-Apache 2.0。
+[MIT](../LICENSE) © 2026 Wingspeg。
